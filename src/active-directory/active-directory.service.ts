@@ -10,21 +10,34 @@ import { FindDeletedObjectsDto } from './dto/FindDeletedObjectsDto';
 import { GetGroupMembershipForGroupDto } from './dto/GetGroupMembershipForGroupDto';
 import { GetGroupMembershipForUserDto } from './dto/GetGroupMembershipForUserDto';
 import { FindUserDto } from './dto/findUser.dto';
+import ActiveDirectory from 'activedirectory2';
+import { ConfigService } from '@nestjs/config';
+import { activeDirectoryConfig } from './interface/active-directory-config.interface';
 
 @Injectable()
 export class ActiveDirectoryService {
-  async signInActiveDirectory(signinUserDto: SigninUserDto) {
-    const { password, email } = signinUserDto;
-    console.log(password);
-    console.log(email);
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
+  private ActiveDirectory = null;
+  private config = null;
+  private activeDirectory = null;
+
+  constructor(
+    private configService: ConfigService
+  ) {
+    this.ActiveDirectory = require('activedirectory2');
+    this.config = {
+      url: configService.get<activeDirectoryConfig>('URL'),
+      baseDN: configService.get<activeDirectoryConfig>('BASEDN'),
+      username: configService.get<activeDirectoryConfig>('USERNAME'),
+      password: configService.get<activeDirectoryConfig>('PASSWORD'),
     };
-    var ad = new ActiveDirectory(config);
+    this.activeDirectory = new this.ActiveDirectory(this.config);
+  }
+
+  async signInActiveDirectory(
+    signinUserDto: SigninUserDto
+  ) {
+    var ad = this.activeDirectory;
+    const { password, email } = signinUserDto;
 
     ad.authenticate(email, password, function (err, auth) {
       if (err) {
@@ -40,21 +53,16 @@ export class ActiveDirectoryService {
     });
   }
 
-  async isUserMemberOfAD(isUserMemberOfDto: IsUserMemberOfDto) {
+  async isUserMemberOfAD(
+    isUserMemberOfDto: IsUserMemberOfDto
+  ) {
+    var ad = this.activeDirectory;
+
     // var username = 'user@domain.com';
     // var groupName = 'Employees';
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
-    };
     var username = isUserMemberOfDto.username;
     var groupName = isUserMemberOfDto.groupName;
-    console.log(username);
-    console.log(groupName);
-    var ad = new ActiveDirectory(config);
+    
     ad.isUserMemberOf(username, groupName, function (err, isMember) {
       if (err) {
         console.log('ERROR: ' + JSON.stringify(err));
@@ -65,15 +73,10 @@ export class ActiveDirectoryService {
     });
   }
 
-  async findUser(findUserDto: FindUserDto) {
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
-    };
-    var ad = new ActiveDirectory(config);
+  async findUser(
+    findUserDto: FindUserDto
+  ) { //preguntar
+    var ad = this.activeDirectory;
 
     // Any of the following username types can be searched on
     var userPrincipalName = findUserDto.userPrincipalName;
@@ -93,15 +96,10 @@ export class ActiveDirectoryService {
     });
   }
 
-  async findGroup(findGroupDto: FindGroupDto) {
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
-    };
-    var ad = new ActiveDirectory(config);
+  async findGroup(
+    findGroupDto: FindGroupDto
+  ) {
+    var ad = this.activeDirectory;
 
     // Any of the following group names can be searched on
     // var groupName = 'Employees';
@@ -124,19 +122,15 @@ export class ActiveDirectoryService {
     });
   }
 
-  async getUsersForGroup(getUsersForGroupDto: GetUsersForGroupDto) {
+  async getUsersForGroup(
+    getUsersForGroupDto: GetUsersForGroupDto
+  ) {
+    var ad = this.activeDirectory;
     const { grupo } = getUsersForGroupDto;
+
     //var groupName = 'Employees';
     var groupName = grupo;
 
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
-    };
-    var ad = new ActiveDirectory(config);
     ad.getUsersForGroup(groupName, function (err, users) {
       if (err) {
         console.log('ERROR: ' + JSON.stringify(err));
@@ -150,18 +144,15 @@ export class ActiveDirectoryService {
     });
   }
 
-  async groupExists(groupExistsDto: GroupExistsDto) {
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
-    };
+  async groupExists(
+    groupExistsDto: GroupExistsDto
+  ) {
+    var ad = this.activeDirectory;
     const { grupo } = groupExistsDto;
+    
     var groupName = grupo;
     //var groupName = 'Employees';
-    var ad = new ActiveDirectory(config);
+
     ad.groupExists(groupName, function (err, exists) {
       if (err) {
         console.log('ERROR: ' + JSON.stringify(err));
@@ -172,18 +163,13 @@ export class ActiveDirectoryService {
     });
   }
 
-  async findGroups(findUserByGroupDto: FindUserByGroupDto) {
+  async findGroups(
+    findUserByGroupDto: FindUserByGroupDto
+  ) {
+    var ad = this.activeDirectory;
     const { query } = findUserByGroupDto;
     // var query = 'CN=Admin';
-    console.log(query);
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
-    };
-    var ad = new ActiveDirectory(config);
+
     ad.findGroups(query, function (err, groups) {
       if (err) {
         console.log('ERROR: ' + JSON.stringify(err));
@@ -197,18 +183,13 @@ export class ActiveDirectoryService {
     });
   }
 
-  async userExists(userExistsDto: UserExistsDto) {
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
-    };
+  async userExists(
+    userExistsDto: UserExistsDto
+  ) {
+    var ad = this.activeDirectory;
     const { username } = userExistsDto;
     //var username = 'john.smith@domain.com'; //recibir
 
-    var ad = new ActiveDirectory(config);
     ad.userExists(username, function (err, exists) {
       if (err) {
         console.log('ERROR: ' + JSON.stringify(err));
@@ -219,17 +200,13 @@ export class ActiveDirectoryService {
     });
   }
 
-  async findDeletedObjects(findDeletedObjectsDto: FindDeletedObjectsDto) {
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
-    };
+  async findDeletedObjects(
+    findDeletedObjectsDto: FindDeletedObjectsDto
+  ) {
+    var ad = this.activeDirectory;
     const { url } = findDeletedObjectsDto;
     //var url = 'ldap://yourdomain.com'; //recibir
-    var ad = new ActiveDirectory(config);
+
     var opts = {
       baseDN: 'ou=Deleted Objects, dc=yourdomain, dc=com',
       filter: 'cn=Bob',
@@ -247,16 +224,9 @@ export class ActiveDirectoryService {
   async getGroupMembershipForGroup(
     getGroupMembershipForGroupDto: GetGroupMembershipForGroupDto,
   ) {
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
-    };
     const { groupName } = getGroupMembershipForGroupDto;
     //var groupName = 'Employees'; //recibir
-    var ad = new ActiveDirectory(config);
+    var ad = this.activeDirectory;
     ad.getGroupMembershipForGroup(groupName, function (err, groups) {
       if (err) {
         console.log('ERROR: ' + JSON.stringify(err));
@@ -271,16 +241,9 @@ export class ActiveDirectoryService {
   async getGroupMembershipForUser(
     getGroupMembershipForUserDto: GetGroupMembershipForUserDto,
   ) {
-    var ActiveDirectory = require('activedirectory2');
-    var config = {
-      url: 'ldap://192.168.131.128',
-      baseDN: 'DC=DEMO,DC=LOCAL',
-      username: 'Administrator@DEMO.LOCAL',
-      password: 'Didibu2000',
-    };
     const { sAMAccountName } = getGroupMembershipForUserDto;
     //var sAMAccountName = 'john.smith@domain.com';
-    var ad = new ActiveDirectory(config);
+    var ad = this.activeDirectory;
     ad.getGroupMembershipForUser(sAMAccountName, function (err, groups) {
       if (err) {
         console.log('ERROR: ' + JSON.stringify(err));
